@@ -12,14 +12,16 @@
 
     body {
       min-height: 100vh;
+      min-height: 100svh;
       background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 70%, #0f3460 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      overflow: hidden;
+      overflow-y: auto;
       position: relative;
+      padding: 2rem 1rem;
     }
 
     body::before {
@@ -63,6 +65,7 @@
       filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
       transition: transform 0.12s ease, filter 0.12s ease;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
       width: min(340px, 85vw);
     }
 
@@ -109,6 +112,12 @@
       transition: opacity 0.08s ease;
     }
     #flash.active { opacity: 1; }
+
+    /* ── Small-screen adjustments ── */
+    @media (max-width: 400px) {
+      p.hint { margin-bottom: 1.5rem; }
+      #lizard-btn { width: 90vw; }
+    }
   </style>
 </head>
 <body>
@@ -124,6 +133,15 @@
   <div id="flash"></div>
 
   <script>
+    /* ────────── Hint text: Tap vs Press ────────── */
+    const hint = document.querySelector('p.hint');
+    const coarseQuery = window.matchMedia('(pointer: coarse)');
+    function updateHint(e) {
+      hint.textContent = e.matches ? 'Tap the lizard!' : 'Press the lizard!';
+    }
+    updateHint(coarseQuery);
+    coarseQuery.addEventListener('change', updateHint);
+
     /* ────────── Audio ────────── */
     function playLizardSound() {
       const audio = new Audio('lizard-button.mp3');
@@ -137,12 +155,15 @@
     const MAX_STICKERS = 60;
 
     function spawnStickers(n = 12) {
+      const isSmallScreen = window.innerWidth <= 400;
+      const minSize = isSmallScreen ? 40 : 60;
+      const maxSize = isSmallScreen ? 80 : 100;
       for (let i = 0; i < n; i++) {
         setTimeout(() => {
           if (stickerCount >= MAX_STICKERS) return;
           stickerCount++;
 
-          const size = 60 + Math.random() * 100;
+          const size = minSize + Math.random() * maxSize;
           const x = Math.random() * (window.innerWidth  - size);
           const y = Math.random() * (window.innerHeight - size);
           const rotStart = (Math.random() - 0.5) * 360;
