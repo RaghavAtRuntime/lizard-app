@@ -118,6 +118,68 @@
       p.hint { margin-bottom: 1.5rem; }
       #lizard-btn { width: 90vw; }
     }
+
+    /* ── Toast notifications ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(99, 220, 120, 0.93);
+      color: #0f0f1a;
+      padding: 0.65rem 1.4rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: clamp(0.85rem, 3vw, 1rem);
+      z-index: 200;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+      animation: toastSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .toast.fade-out {
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      opacity: 0;
+      transform: translateX(-50%) translateY(-8px);
+    }
+    @keyframes toastSlideUp {
+      from { transform: translateX(-50%) translateY(30px); opacity: 0; }
+      to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+    }
+
+    /* ── Screen shake ── */
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      15%       { transform: translate(-4px, 2px) rotate(-0.5deg); }
+      30%       { transform: translate(4px, -2px) rotate(0.5deg); }
+      50%       { transform: translate(-3px, 1px) rotate(-0.3deg); }
+      70%       { transform: translate(3px, -1px) rotate(0.3deg); }
+      85%       { transform: translate(-1px, 1px) rotate(-0.1deg); }
+    }
+    body.shake { animation: screenShake 0.35s ease; }
+
+    /* ── Moving button (fixed positioning after first click) ── */
+    #lizard-btn.is-moving {
+      position: fixed;
+      margin: 0;
+      z-index: 50;
+      transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  top  0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  transform 0.12s ease,
+                  filter 0.12s ease;
+    }
+
+    /* ── Konami mode: invasion background pulse ── */
+    @keyframes invasionPulse {
+      0%   { opacity: 1; }
+      50%  { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+    body.konami-mode::before {
+      background: radial-gradient(ellipse at 60% 20%, rgba(255, 100, 100, 0.18) 0%, transparent 55%),
+                  radial-gradient(ellipse at 20% 80%, rgba(100, 100, 255, 0.14) 0%, transparent 45%);
+      animation: invasionPulse 2s ease infinite;
+    }
   </style>
 </head>
 <body>
@@ -136,7 +198,9 @@
     /* ────────── Hint text: Tap vs Press ────────── */
     const hint = document.querySelector('p.hint');
     const coarseQuery = window.matchMedia('(pointer: coarse)');
+    let buttonIsMoving = false;
     function updateHint(e) {
+      if (buttonIsMoving) return; // don't override once button is roaming
       hint.textContent = e.matches ? 'Tap the lizard!' : 'Press the lizard!';
     }
     updateHint(coarseQuery);
@@ -201,12 +265,134 @@
       setTimeout(() => flash.classList.remove('active'), 120);
     }
 
-    /* ────────── Button handler ────────── */
+    /* ────────── Funny rotating titles ────────── */
+    const FUNNY_TITLES = [
+      '🦎 Lizard! 🦎',
+      '🦎 Lizard Goes Brrr 🦎',
+      '🦎 MORE LIZARD 🦎',
+      '🦎 Lizard Supremacy 🦎',
+      '🦎 Much Lizard 🦎',
+      '🦎 Lizard Goes Zoom 🦎',
+      '🦎 Lizard Mode: ON 🦎',
+      '🦎 Where Lizard? 🦎',
+      '🦎 Lizard? Lizard! 🦎',
+      '🦎 All Lizard Everything 🦎',
+      '🦎 Lizard Overload 🦎',
+      '🦎 Can\'t Stop Won\'t Stop 🦎',
+    ];
+    const h1 = document.querySelector('h1');
+    let titleIdx = 0;
+    function rotateTitle() {
+      titleIdx = (titleIdx + 1) % FUNNY_TITLES.length;
+      h1.textContent = FUNNY_TITLES[titleIdx];
+    }
+
+    /* ────────── Click counter & milestone toasts ────────── */
+    let clickCount = 0;
+    const MILESTONES = {
+      1:   '🦎 Nice one!',
+      5:   'You found me again! 🦎',
+      10:  'Stop clicking me! 😤🦎',
+      25:  '🏆 Lizard Enthusiast Unlocked!',
+      50:  '👑 Lizard Master!',
+      100: '✨ YOU ARE THE LIZARD GOD ✨',
+    };
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 400);
+      }, 2500);
+    }
+
+    function checkMilestone(n) {
+      if (MILESTONES[n]) showToast(MILESTONES[n]);
+    }
+
+    /* ────────── Screen shake ────────── */
+    function shakeScreen() {
+      document.body.classList.add('shake');
+      document.body.addEventListener('animationend', () => {
+        document.body.classList.remove('shake');
+      }, { once: true });
+    }
+
+    /* ────────── Moving button ────────── */
     const btn = document.getElementById('lizard-btn');
+    const MOVE_PADDING = 20;
+
+    function moveButton() {
+      const btnW = btn.offsetWidth;
+      const btnH = btn.offsetHeight;
+
+      if (!buttonIsMoving) {
+        // Snap to fixed at current visual position, then animate away
+        const rect = btn.getBoundingClientRect();
+        btn.style.left = rect.left + 'px';
+        btn.style.top  = rect.top  + 'px';
+        btn.classList.add('is-moving');
+        void btn.offsetWidth; // force reflow before transitioning
+        buttonIsMoving = true;
+        hint.textContent = '🦎 Find the lizard! 🦎';
+        btn.setAttribute('aria-label', 'Play Lizard sound – use Tab to focus me!');
+      }
+
+      const maxX = window.innerWidth  - btnW - MOVE_PADDING;
+      const maxY = window.innerHeight - btnH - MOVE_PADDING;
+      btn.style.left = (MOVE_PADDING + Math.random() * Math.max(0, maxX - MOVE_PADDING)) + 'px';
+      btn.style.top  = (MOVE_PADDING + Math.random() * Math.max(0, maxY - MOVE_PADDING)) + 'px';
+
+      // Keep keyboard focus on the button after it moves so Tab users aren't stranded
+      btn.focus({ preventScroll: true });
+    }
+
+    /* ────────── Konami code easter egg ────────── */
+    const KONAMI_CODE = [
+      'ArrowUp','ArrowUp','ArrowDown','ArrowDown',
+      'ArrowLeft','ArrowRight','ArrowLeft','ArrowRight',
+      'b','a'
+    ];
+    let konamiIdx = 0;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === KONAMI_CODE[konamiIdx]) {
+        konamiIdx++;
+        if (konamiIdx === KONAMI_CODE.length) {
+          konamiIdx = 0;
+          triggerLizardInvasion();
+        }
+      } else {
+        konamiIdx = 0;
+      }
+    });
+
+    function triggerLizardInvasion() {
+      showToast('🦎🦎🦎 LIZARD INVASION! 🦎🦎🦎');
+      document.body.classList.add('konami-mode');
+      doFlash();
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => spawnStickers(15), i * 150);
+      }
+      h1.textContent = '🦎🦎🦎 INVASION 🦎🦎🦎';
+      setTimeout(() => {
+        document.body.classList.remove('konami-mode');
+        h1.textContent = FUNNY_TITLES[titleIdx];
+      }, 5000);
+    }
+
+    /* ────────── Button handler ────────── */
     btn.addEventListener('click', () => {
+      clickCount++;
       playLizardSound();
       doFlash();
       spawnStickers(12);
+      rotateTitle();
+      shakeScreen();
+      moveButton();
+      checkMilestone(clickCount);
     });
   </script>
 </body>
