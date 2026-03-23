@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lizard!</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 50% 0%, #b8f5a0 0%, #5dde3e 40%, #2a9d18 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+      overflow: hidden;
+      position: relative;
+    }
+
+    h1 {
+      color: #fff;
+      font-size: clamp(2rem, 6vw, 4rem);
+      text-shadow: 3px 3px 0 #1a6b0a, 0 0 30px rgba(255,255,255,0.4);
+      margin-bottom: 1rem;
+      letter-spacing: 2px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    p.hint {
+      color: #e8ffe0;
+      font-size: clamp(0.9rem, 2.5vw, 1.3rem);
+      text-shadow: 1px 1px 3px #1a6b0a;
+      margin-bottom: 2.5rem;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ── Lizard button ── */
+    #lizard-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      outline: none;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
+      transition: transform 0.12s ease, filter 0.12s ease;
+      -webkit-tap-highlight-color: transparent;
+      width: min(340px, 85vw);
+    }
+
+    #lizard-btn:hover {
+      filter: drop-shadow(0 10px 28px rgba(0,0,0,0.5)) brightness(1.12);
+      transform: scale(1.05) rotate(-2deg);
+    }
+
+    #lizard-btn:active {
+      transform: scale(0.93) rotate(3deg);
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)) brightness(1.2);
+    }
+
+    /* ── Stickers ── */
+    .sticker {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+                 wobble 1.6s ease-in-out 0.4s infinite;
+      transform-origin: center center;
+      opacity: 0;
+    }
+
+    @keyframes popIn {
+      0%   { transform: scale(0) rotate(var(--rot-start)); opacity: 0; }
+      60%  { opacity: 1; }
+      100% { transform: scale(1) rotate(var(--rot-end));   opacity: 1; }
+    }
+
+    @keyframes wobble {
+      0%, 100% { transform: scale(1)    rotate(var(--rot-end)); }
+      50%       { transform: scale(1.08) rotate(calc(var(--rot-end) + 6deg)); }
+    }
+
+    /* ── Ripple flash ── */
+    #flash {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(255,255,220,0.7) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.08s ease;
+    }
+    #flash.active { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <h1>🦎 Lizard! 🦎</h1>
+  <p class="hint">Press the lizard!</p>
+
+  <!-- Cartoon lizard SVG button -->
+  <button id="lizard-btn" aria-label="Play Lizard sound">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 280" role="img" aria-label="Cartoon lizard">
+      <!-- shadow -->
+      <ellipse cx="170" cy="268" rx="90" ry="10" fill="rgba(0,0,0,0.18)"/>
+
+      <!-- tail -->
+      <path d="M 240 195 Q 310 230 328 210 Q 318 190 290 185 Q 268 182 250 175"
+            fill="#4dc030" stroke="#2a7a18" stroke-width="2.5" stroke-linejoin="round"/>
+      <!-- tail stripe -->
+      <path d="M 255 180 Q 295 188 322 208" fill="none" stroke="#6ef04a" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- hind-left leg -->
+      <path d="M 145 215 Q 120 240 100 250 Q 92 252 88 248 L 95 242 Q 108 238 125 220 Z"
+            fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <!-- hind-left toes -->
+      <line x1="88" y1="248" x2="80" y2="255" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="95" y1="242" x2="86" y2="252" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="100" y1="250" x2="93" y2="258" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- hind-right leg -->
+      <path d="M 195 215 Q 220 240 240 250 Q 248 252 252 248 L 245 242 Q 232 238 215 220 Z"
+            fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <!-- hind-right toes -->
+      <line x1="252" y1="248" x2="260" y2="255" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="245" y1="242" x2="254" y2="252" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="240" y1="250" x2="247" y2="258" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- body -->
+      <ellipse cx="170" cy="195" rx="80" ry="55" fill="#5dde3e" stroke="#2a7a18" stroke-width="2.5"/>
+      <!-- belly -->
+      <ellipse cx="170" cy="200" rx="48" ry="36" fill="#a8f78e" stroke="#5dde3e" stroke-width="1.5"/>
+      <!-- belly stripe -->
+      <ellipse cx="170" cy="205" rx="28" ry="22" fill="#c8fdb0" stroke="none"/>
+      <!-- dorsal spines -->
+      <path d="M 152 142 L 148 122 L 156 140" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+      <path d="M 164 138 L 160 116 L 169 137" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+      <path d="M 176 138 L 174 115 L 182 137" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+      <path d="M 188 142 L 188 122 L 194 142" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+
+      <!-- neck -->
+      <path d="M 148 155 Q 140 135 145 115 Q 150 100 170 95 Q 190 100 195 115 Q 200 135 192 155 Z"
+            fill="#5dde3e" stroke="#2a7a18" stroke-width="2"/>
+
+      <!-- front-left arm -->
+      <path d="M 120 175 Q 95 185 80 195 Q 74 198 72 194 L 80 188 Q 94 180 112 168 Z"
+            fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <!-- front-left fingers -->
+      <line x1="72" y1="194" x2="64" y2="200" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="80" y1="188" x2="71" y2="197" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="80" y1="195" x2="73" y2="203" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- front-right arm -->
+      <path d="M 220 175 Q 245 185 260 195 Q 266 198 268 194 L 260 188 Q 246 180 228 168 Z"
+            fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <!-- front-right fingers -->
+      <line x1="268" y1="194" x2="276" y2="200" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="260" y1="188" x2="269" y2="197" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="260" y1="195" x2="267" y2="203" stroke="#2a7a18" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- head -->
+      <ellipse cx="170" cy="98" rx="48" ry="42" fill="#5dde3e" stroke="#2a7a18" stroke-width="2.5"/>
+
+      <!-- head top shine -->
+      <ellipse cx="162" cy="72" rx="22" ry="10" fill="#9af57c" opacity="0.6"/>
+
+      <!-- eye whites -->
+      <ellipse cx="150" cy="88" rx="14" ry="16" fill="white" stroke="#2a7a18" stroke-width="2"/>
+      <ellipse cx="190" cy="88" rx="14" ry="16" fill="white" stroke="#2a7a18" stroke-width="2"/>
+      <!-- irises -->
+      <ellipse cx="152" cy="90" rx="9" ry="11" fill="#f5c800"/>
+      <ellipse cx="192" cy="90" rx="9" ry="11" fill="#f5c800"/>
+      <!-- pupils -->
+      <ellipse cx="153" cy="91" rx="5" ry="8" fill="#1a0a00"/>
+      <ellipse cx="193" cy="91" rx="5" ry="8" fill="#1a0a00"/>
+      <!-- eye shine -->
+      <circle cx="156" cy="86" r="2.5" fill="white"/>
+      <circle cx="196" cy="86" r="2.5" fill="white"/>
+
+      <!-- eyelid bump -->
+      <path d="M 136 82 Q 150 74 164 82" fill="none" stroke="#2a7a18" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 176 82 Q 190 74 204 82" fill="none" stroke="#2a7a18" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- nostril -->
+      <ellipse cx="160" cy="108" rx="4" ry="3" fill="#2a7a18" opacity="0.5"/>
+      <ellipse cx="180" cy="108" rx="4" ry="3" fill="#2a7a18" opacity="0.5"/>
+
+      <!-- smile -->
+      <path d="M 148 118 Q 170 132 192 118" fill="none" stroke="#2a7a18" stroke-width="3" stroke-linecap="round"/>
+      <!-- tongue -->
+      <path d="M 170 130 Q 168 140 162 144 M 170 130 Q 172 140 178 144"
+            fill="none" stroke="#e03050" stroke-width="3" stroke-linecap="round"/>
+
+      <!-- cheek blush -->
+      <ellipse cx="136" cy="110" rx="10" ry="7" fill="#ff9999" opacity="0.35"/>
+      <ellipse cx="204" cy="110" rx="10" ry="7" fill="#ff9999" opacity="0.35"/>
+    </svg>
+  </button>
+
+  <div id="flash"></div>
+
+  <script>
+    /* ────────── Audio (Web Audio API) ────────── */
+    function playLizardSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+      const schedule = [
+        // chirp bursts mimicking a gecko/lizard call
+        { t: 0.00, f1: 1400, f2: 900,  dur: 0.08, vol: 0.45 },
+        { t: 0.09, f1: 1500, f2: 950,  dur: 0.08, vol: 0.45 },
+        { t: 0.18, f1: 1600, f2: 1000, dur: 0.09, vol: 0.50 },
+        { t: 0.40, f1: 800,  f2: 500,  dur: 0.12, vol: 0.40 },
+        { t: 0.53, f1: 850,  f2: 520,  dur: 0.12, vol: 0.40 },
+        { t: 0.66, f1: 900,  f2: 540,  dur: 0.13, vol: 0.42 },
+        { t: 0.80, f1: 1200, f2: 700,  dur: 0.18, vol: 0.35 },
+      ];
+
+      schedule.forEach(({ t, f1, f2, dur, vol }) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sawtooth';
+        const now = ctx.currentTime + t;
+        osc.frequency.setValueAtTime(f1, now);
+        osc.frequency.exponentialRampToValueAtTime(f2, now + dur);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        osc.start(now);
+        osc.stop(now + dur + 0.01);
+      });
+    }
+
+    /* ────────── Sticker spawning ────────── */
+    // Inline SVG data URL for the sticker lizard (simplified)
+    const STICKER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 280">
+      <ellipse cx="240" cy="195" rx="55" ry="22" transform="rotate(18 240 195)" fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <path d="M 145 215 Q 120 240 100 250 Q 92 252 88 248 L 95 242 Q 108 238 125 220 Z" fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <path d="M 195 215 Q 220 240 240 250 Q 248 252 252 248 L 245 242 Q 232 238 215 220 Z" fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <ellipse cx="170" cy="195" rx="80" ry="55" fill="#5dde3e" stroke="#2a7a18" stroke-width="2.5"/>
+      <ellipse cx="170" cy="200" rx="48" ry="36" fill="#a8f78e" stroke="#5dde3e" stroke-width="1.5"/>
+      <path d="M 152 142 L 148 122 L 156 140" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+      <path d="M 164 138 L 160 116 L 169 137" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+      <path d="M 176 138 L 174 115 L 182 137" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+      <path d="M 188 142 L 188 122 L 194 142" fill="#3ab828" stroke="#2a7a18" stroke-width="1.5"/>
+      <path d="M 148 155 Q 140 135 145 115 Q 150 100 170 95 Q 190 100 195 115 Q 200 135 192 155 Z" fill="#5dde3e" stroke="#2a7a18" stroke-width="2"/>
+      <path d="M 120 175 Q 95 185 80 195 Q 74 198 72 194 L 80 188 Q 94 180 112 168 Z" fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <path d="M 220 175 Q 245 185 260 195 Q 266 198 268 194 L 260 188 Q 246 180 228 168 Z" fill="#4dc030" stroke="#2a7a18" stroke-width="2"/>
+      <ellipse cx="170" cy="98" rx="48" ry="42" fill="#5dde3e" stroke="#2a7a18" stroke-width="2.5"/>
+      <ellipse cx="162" cy="72" rx="22" ry="10" fill="#9af57c" opacity="0.6"/>
+      <ellipse cx="150" cy="88" rx="14" ry="16" fill="white" stroke="#2a7a18" stroke-width="2"/>
+      <ellipse cx="190" cy="88" rx="14" ry="16" fill="white" stroke="#2a7a18" stroke-width="2"/>
+      <ellipse cx="152" cy="90" rx="9" ry="11" fill="#f5c800"/>
+      <ellipse cx="192" cy="90" rx="9" ry="11" fill="#f5c800"/>
+      <ellipse cx="153" cy="91" rx="5" ry="8" fill="#1a0a00"/>
+      <ellipse cx="193" cy="91" rx="5" ry="8" fill="#1a0a00"/>
+      <circle cx="156" cy="86" r="2.5" fill="white"/>
+      <circle cx="196" cy="86" r="2.5" fill="white"/>
+      <path d="M 148 118 Q 170 132 192 118" fill="none" stroke="#2a7a18" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 170 130 Q 168 140 162 144 M 170 130 Q 172 140 178 144" fill="none" stroke="#e03050" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="136" cy="110" rx="10" ry="7" fill="#ff9999" opacity="0.35"/>
+      <ellipse cx="204" cy="110" rx="10" ry="7" fill="#ff9999" opacity="0.35"/>
+    </svg>`;
+
+    const STICKER_URL = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(STICKER_SVG);
+
+    let stickerCount = 0;
+    const MAX_STICKERS = 60;
+
+    function spawnStickers(n = 12) {
+      for (let i = 0; i < n; i++) {
+        setTimeout(() => {
+          if (stickerCount >= MAX_STICKERS) return;
+          stickerCount++;
+
+          const size = 60 + Math.random() * 100;
+          const x = Math.random() * (window.innerWidth  - size);
+          const y = Math.random() * (window.innerHeight - size);
+          const rotStart = (Math.random() - 0.5) * 360;
+          const rotEnd   = (Math.random() - 0.5) * 40;
+
+          const img = document.createElement('img');
+          img.src = STICKER_URL;
+          img.className = 'sticker';
+          img.width  = size;
+          img.height = size * (280 / 340);
+          img.style.left = x + 'px';
+          img.style.top  = y + 'px';
+          img.style.setProperty('--rot-start', rotStart + 'deg');
+          img.style.setProperty('--rot-end',   rotEnd   + 'deg');
+          img.alt = 'lizard sticker';
+
+          document.body.appendChild(img);
+
+          // auto-remove after a while if we are near the cap
+          if (stickerCount > MAX_STICKERS * 0.8) {
+            setTimeout(() => {
+              img.style.transition = 'opacity 0.5s';
+              img.style.opacity = '0';
+              setTimeout(() => { img.remove(); stickerCount--; }, 500);
+            }, 6000 + Math.random() * 4000);
+          }
+        }, i * 60);
+      }
+    }
+
+    /* ────────── Flash effect ────────── */
+    const flash = document.getElementById('flash');
+    function doFlash() {
+      flash.classList.add('active');
+      setTimeout(() => flash.classList.remove('active'), 120);
+    }
+
+    /* ────────── Button handler ────────── */
+    const btn = document.getElementById('lizard-btn');
+    btn.addEventListener('click', () => {
+      playLizardSound();
+      doFlash();
+      spawnStickers(12);
+    });
+  </script>
+</body>
+</html>
