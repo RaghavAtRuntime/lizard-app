@@ -4,35 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lizard!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       min-height: 100vh;
-      background: radial-gradient(ellipse at 50% 0%, #b8f5a0 0%, #5dde3e 40%, #2a9d18 100%);
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 70%, #0f3460 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       overflow: hidden;
       position: relative;
     }
 
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 60% 20%, rgba(99, 220, 120, 0.12) 0%, transparent 55%),
+                  radial-gradient(ellipse at 20% 80%, rgba(56, 189, 248, 0.08) 0%, transparent 45%);
+      pointer-events: none;
+    }
+
     h1 {
-      color: #fff;
-      font-size: clamp(2rem, 6vw, 4rem);
-      text-shadow: 3px 3px 0 #1a6b0a, 0 0 30px rgba(255,255,255,0.4);
-      margin-bottom: 1rem;
-      letter-spacing: 2px;
+      color: #f0fdf4;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 40px rgba(99, 220, 120, 0.35);
+      margin-bottom: 0.5rem;
       pointer-events: none;
       user-select: none;
     }
 
     p.hint {
-      color: #e8ffe0;
-      font-size: clamp(0.9rem, 2.5vw, 1.3rem);
-      text-shadow: 1px 1px 3px #1a6b0a;
+      color: rgba(240, 253, 244, 0.55);
+      font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       margin-bottom: 2.5rem;
       pointer-events: none;
       user-select: none;
@@ -87,7 +102,7 @@
     #flash {
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse at center, rgba(255,255,220,0.7) 0%, transparent 70%);
+      background: radial-gradient(ellipse at center, rgba(99, 220, 120, 0.22) 0%, transparent 70%);
       pointer-events: none;
       z-index: 5;
       opacity: 0;
